@@ -13,9 +13,46 @@ class Node:
 
 
 class Tree:
-    def __init__(self, max_depth):
+    def __init__(self, max_depth, min_samples_split):
         self.max_depth = max_depth
+        self.min_samples_split = min_samples_split
         self.root = None
+
+    # def create_decision_tree(self, data, depth):
+    #     X = data.drop(list(data.columns)[len(list(data.columns)) - 1], axis = 1)
+    #     y = data.drop(list(data.columns)[:len(list(data.columns)) - 1], axis = 1)
+    #     num_features = len(X.columns())
+    #     samples = len(X)
+    #     if (depth<=self.max_depth) and (samples>=self.min_samples_split):
+
+    def split_data(self, data, feature, threshold):
+        l = data[data[feature] <= threshold]
+        r = data[data[feature] > threshold]
+        return l, r
+
+    def optimal_split(self, data, samples):
+        min_gini = float("inf")
+        feats = list(data.columns)[:-1]
+        for feat in feats:
+            thresholds = data[feat].unique()
+            for value in thresholds:
+                left_data, right_data = self.split_data(data, feat, value)
+                
+                
+            
+        
+
+    def gini(self, y):
+        labels = list(set(y))
+        res = 0
+        for label in labels:
+            res += (len(y[y == label])/len(y))**2
+        return 1 - res
+
+
+
+
+
 
 
 class NaiveBayesClassifier:
