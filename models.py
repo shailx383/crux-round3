@@ -1,60 +1,5 @@
 import numpy as np
 import pandas as pd
-
-
-class Node:
-    def __init__(self, feature, left_tree, right_tree, threshold, impurity, data):
-        self.feature = feature
-        self.threshold = threshold
-        self.impurity = impurity
-        self.left_tree = left_tree
-        self.right_tree = right_tree
-        self.data = data
-
-
-class Tree:
-    def __init__(self, max_depth, min_samples_split):
-        self.max_depth = max_depth
-        self.min_samples_split = min_samples_split
-        self.root = None
-
-    # def create_decision_tree(self, data, depth):
-    #     X = data.drop(list(data.columns)[len(list(data.columns)) - 1], axis = 1)
-    #     y = data.drop(list(data.columns)[:len(list(data.columns)) - 1], axis = 1)
-    #     num_features = len(X.columns())
-    #     samples = len(X)
-    #     if (depth<=self.max_depth) and (samples>=self.min_samples_split):
-
-    def split_data(self, data, feature, threshold):
-        l = data[data[feature] <= threshold]
-        r = data[data[feature] > threshold]
-        return l, r
-
-    def optimal_split(self, data, samples):
-        min_gini = float("inf")
-        feats = list(data.columns)[:-1]
-        for feat in feats:
-            thresholds = data[feat].unique()
-            for value in thresholds:
-                left_data, right_data = self.split_data(data, feat, value)
-                
-                
-            
-        
-
-    def gini(self, y):
-        labels = list(set(y))
-        res = 0
-        for label in labels:
-            res += (len(y[y == label])/len(y))**2
-        return 1 - res
-
-
-
-
-
-
-
 class NaiveBayesClassifier:
     def __init__(self, X, y):
         self.classes = list(y.unique())
@@ -116,3 +61,33 @@ class NaiveBayesClassifier:
                     self.total += 1
                     scores[label] = score/self.total
         return scores
+
+
+class Node:
+    def __init__(self, feature, impurity, thresh, left_node, right_node, isLeaf):
+        self.feature = feature
+        self.impurity = impurity
+        self.thresh = thresh
+        self.left_node = left_node
+        self.right_node = right_node
+        self.isLeaf = isLeaf
+
+
+class DecisionTree:
+    def __init__(self, max_depth, min_rows_split):
+        self.min_rows_split = min_rows_split
+        self.max_depth = max_depth
+        self.root = None
+    
+    def fit(self, X, y):
+        df = pd.concat([X, y], axis = 1)
+        self.root = self.make_tree(df)
+    
+    # def make_tree(self, depth, df):
+    #     rows = len(df.iloc[:,:-1])
+    #     features = list(df.iloc[:,:-1].columns)
+    #     if self.max_depth > depth and rows > self.min_rows_split:
+
+    def optimal_feature(self, df, )
+
+
