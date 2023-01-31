@@ -142,8 +142,28 @@ class DecisionTree:
     def final_label(self, col):
         return (dict(map(reversed, dict(col.value_counts()).items()))[max(dict(col.value_counts()).values())])
 
-    def predict(self, input, tree):
+    def predict_sub(self, input, tree):
         if tree.isLeaf:
             return tree.value
         else:
-            return self.predict()
+            limit = tree.thresh
+            feat = tree.feature
+            if input[feat]<=limit:
+                return self.predict_sub(input, tree.left_node)
+            else:
+                return self.predict_sub(input, tree.right_node)
+    
+    def predict(self, inputs):
+        preds = []
+        for i in range(len(inputs)):
+            preds.append(self.predict_sub(inputs.iloc[i], self.root))
+        return preds
+
+# class RandomForest:
+#     def __init__(self, n_estimators):
+#         self.n_estimators = n_estimators
+    
+#     def create_forest(self, df):
+
+        
+        
