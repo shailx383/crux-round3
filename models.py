@@ -1,68 +1,6 @@
 import numpy as np
 import pandas as pd
-
-class NaiveBayesClassifier:
-    def __init__(self, X, y):
-        self.classes = list(y.unique())
-        self.X = X
-        self.y = y
-        self.cat_dict = self.cat_probabilities()
-        self.word_dict = self.probabilities(self.counter(X))
-        self.total = sum(list(self.word_dict.values()))
-
-    def predict(self, lyric):
-        if (isinstance(lyric, str)):
-            l_scores = self.lyric_score(lyric)
-            k = list(l_scores.keys())
-            v = list(l_scores.values())
-            i = v.index(max(v))
-            return k[i]
-        elif (isinstance(lyric, pd.Series)):
-            lst = lyric.to_list()
-            preds = []
-            for x in lst:
-                l_scores = self.lyric_score(x)
-                k = list(l_scores.keys())
-                v = list(l_scores.values())
-                i = v.index(max(v))
-                preds.append(k[i])
-            return preds
-
-    def counter(self, X):
-        word_frequencies = {}
-        lyrics = X.to_list()
-        for lyric in lyrics:
-            for word in lyric.split():
-                if word not in word_frequencies.keys():
-                    word_frequencies[word] = 1
-                else:
-                    word_frequencies[word] += 1
-        return word_frequencies
-
-    def cat_probabilities(self):
-        total = len(self.X)
-        p = {}
-        for i in self.y.unique():
-            p[i] = self.y.value_counts()[i]/total
-        return p
-
-    def probabilities(self, count_dict):
-        total = sum(list(count_dict.values()))
-        p_dict = {word: (count_dict[word]/total) for word in count_dict.keys()}
-        return p_dict
-
-    def lyric_score(self, lyric):
-        scores = {}
-        for label in self.classes:
-            score = self.cat_dict[label]
-            for word in lyric.split():
-                if word in self.word_dict:
-                    scores[label] = score*self.word_dict[word]
-                else:
-                    self.total += 1
-                    scores[label] = score/self.total
-        return scores
-
+import random
 
 class Node:
     def __init__(self, feature=None, impurity=None, thresh=None, left_node=None, right_node=None, value=None, isLeaf=False):
@@ -76,7 +14,7 @@ class Node:
 
 
 class DecisionTree:
-    def __init__(self, max_depth, min_rows_split):
+    def __init__(self, max_depth=3, min_rows_split=3):
         self.min_rows_split = min_rows_split
         self.max_depth = max_depth
         self.root = None
@@ -111,6 +49,7 @@ class DecisionTree:
                 r_condition = df[feature] > val
                 l_df = df[l_condition]
                 r_df = df[r_condition]
+                print('l_df:',l_df,'\nr_df:',r_df, '\nfeat:', feature, '\nval:', val)
                 if len(l_df) > 0 and len(r_df) > 0:
                     gini = self.weighted_gini_impurity(l_df, r_df)
                     if gini < min_gini:
@@ -137,7 +76,8 @@ class DecisionTree:
         sum_squares = 0
         for label in sub_label_distr.keys():
             sum_squares += (sub_label_distr[label]/total)**2
-        return 1 - sum_squares
+        impurity = 1 - sum_squares
+        return impurity
     
     def final_label(self, col):
         return (dict(map(reversed, dict(col.value_counts()).items()))[max(dict(col.value_counts()).values())])
@@ -159,11 +99,56 @@ class DecisionTree:
             preds.append(self.predict_sub(inputs.iloc[i], self.root))
         return preds
 
-# class RandomForest:
-#     def __init__(self, n_estimators):
-#         self.n_estimators = n_estimators
+class RandomForest:
+    def __init__(self, n_estimators):
+        self.n_estimators = n_estimators
+        self.forest = None
+
+    def create_forest(self, df):
+        datasets = self.get_all_bootstraps(df)
+        trees = []
+        for dataset in datasets:
+            tree = DecisionTree()
+            tree.fit(dataset.iloc[:, :-1], dataset.iloc[:, -1])
+            trees.append(tree)
+        return trees
+
+    def fit(self, X, y):
+        df = pd.concat([X, y], axis = 1)
+        self.forest = self.create_forest(df)
+
+
+
+    def bootstrap_dataset(self, df):
+        boot_indices = []
+        for i in range(len(df)):
+            boot_indices.append(random.randint(0, len(df) - 1))
+        boot_df = pd.DataFrame()
+        for index in boot_indices:
+            boot_df = pd.concat([boot_df, df.iloc[index]], axis = 1)  
+        boot_df = boot_df.transpose()
+        return boot_df
     
-#     def create_forest(self, df):
+    def get_all_bootstraps(self, df):
+        bootstraps = []
+        features = list(df.iloc[:,:-1].columns)
+        for i in range(self.n_estimators):
+            bootstraps.append({
+                'df': self.bootstrap_dataset(df),
+                'features': np.random.choice(features, size = int(np.ceil(np.sqrt(len(features)))), replace=False)
+            })
+        bootstrapped_datasets = []
+        for bootstrap in bootstraps:
+            data_frame = bootstrap['df']
+            feats = bootstrap['features']
+            bootstrapped_datasets.append(data_frame[list(feats)])
+        return bootstrapped_datasets
+
+
+
 
         
+
+
+
         
