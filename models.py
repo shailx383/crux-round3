@@ -49,7 +49,6 @@ class DecisionTree:
                 r_condition = df[feature] > val
                 l_df = df[l_condition]
                 r_df = df[r_condition]
-                print('l_df:',l_df,'\nr_df:',r_df, '\nfeat:', feature, '\nval:', val)
                 if len(l_df) > 0 and len(r_df) > 0:
                     gini = self.weighted_gini_impurity(l_df, r_df)
                     if gini < min_gini:
@@ -109,15 +108,13 @@ class RandomForest:
         trees = []
         for dataset in datasets:
             tree = DecisionTree()
-            tree.fit(dataset.iloc[:, :-1], dataset.iloc[:, -1])
+            tree.fit(dataset.iloc[:,:-1], dataset.iloc[:, -1])
             trees.append(tree)
         return trees
 
     def fit(self, X, y):
         df = pd.concat([X, y], axis = 1)
         self.forest = self.create_forest(df)
-
-
 
     def bootstrap_dataset(self, df):
         boot_indices = []
@@ -135,13 +132,13 @@ class RandomForest:
         for i in range(self.n_estimators):
             bootstraps.append({
                 'df': self.bootstrap_dataset(df),
-                'features': np.random.choice(features, size = int(np.ceil(np.sqrt(len(features)))), replace=False)
+                'features': list(np.random.choice(features, size = int(np.ceil(np.sqrt(len(features)))), replace=False))+[df.columns[-1]]
             })
         bootstrapped_datasets = []
         for bootstrap in bootstraps:
             data_frame = bootstrap['df']
             feats = bootstrap['features']
-            bootstrapped_datasets.append(data_frame[list(feats)])
+            bootstrapped_datasets.append(data_frame[feats])
         return bootstrapped_datasets
 
 
