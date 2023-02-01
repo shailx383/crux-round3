@@ -102,6 +102,7 @@ class RandomForest:
     def __init__(self, n_estimators):
         self.n_estimators = n_estimators
         self.forest = None
+        self.prediction_labels = None
 
     def create_forest(self, df):
         datasets = self.get_all_bootstraps(df)
@@ -114,6 +115,7 @@ class RandomForest:
 
     def fit(self, X, y):
         df = pd.concat([X, y], axis = 1)
+        self.prediction_labels = list(y.unique())
         self.forest = self.create_forest(df)
 
     def bootstrap_dataset(self, df):
@@ -125,7 +127,25 @@ class RandomForest:
             boot_df = pd.concat([boot_df, df.iloc[index]], axis = 1)  
         boot_df = boot_df.transpose()
         return boot_df
-    
+
+    def predict_matrix(self, inputs):
+        predictions_df = pd.DataFrame()
+        for tree in self.forest:
+            preds_by_tree = tree.predict(inputs)
+            predictions_df = pd.concat([predictions_df, pd.Series(preds_by_tree)], axis = 1)
+        return predictions_df.transpose()
+
+    def predict(self, inputs):
+        matrix = self.predict_matrix(inputs)
+        final_preds = []
+        for tree in matrix.columns:
+            final_preds.append(self.max_dict(dict((matrix[tree].value_counts()))))
+        return final_preds
+
+    def max_dict(self, d):
+        rev = dict(map(reversed, d.items()))
+        return rev[max(list(d.values()))]
+
     def get_all_bootstraps(self, df):
         bootstraps = []
         features = list(df.iloc[:,:-1].columns)
