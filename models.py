@@ -49,8 +49,8 @@ class DecisionTree:
                 r_condition = df[feature] > val
                 l_df = df[l_condition]
                 r_df = df[r_condition]
-                print('r_df', r_df)
-                print('l_df', l_df)
+                # print('r_df', r_df)
+                # print('l_df', l_df)
                 if len(l_df) > 0 and len(r_df) > 0:
                     gini = self.weighted_gini_impurity(l_df, r_df)
                     if gini < min_gini:
