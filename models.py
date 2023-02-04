@@ -44,6 +44,8 @@ class DecisionTree:
         min_gini = float("inf")
         for feature in features:
             values = df[feature].unique()
+            values.sort()
+            values = values[1:-1]
             for val in values:
                 l_condition = df[feature] <= val
                 r_condition = df[feature] > val
@@ -164,7 +166,10 @@ class RandomForest:
         return bootstrapped_datasets
 
 
-
+class NaiveBayesClassifier:
+    
+    
+        
 
         
 
