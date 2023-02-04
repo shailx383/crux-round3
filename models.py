@@ -23,14 +23,14 @@ class DecisionTree:
     
     def fit(self, X, y):
         '''
-        
+        trains the model with given X_train and y_train
         '''
         df = pd.concat([X, y], axis = 1)
         self.root = self.make_tree(0, df)
     
     def make_tree(self, depth, df):
         '''
-        
+        recursively builds the decision tree unitl specified maximum depth
         '''
         rows = len(df.iloc[:,:-1])
         features = list(df.iloc[:,:-1].columns)
@@ -45,11 +45,12 @@ class DecisionTree:
 
     def optimal_feature(self, df):
         '''
+        finds best split of the dataframe based on feature and threshold. 
+        finds the split with the minimum gini impurity.
         '''
         X = df.iloc[:,:-1]
         y = df.iloc[:,-1]
         features = list(X.columns)
-        total_rows = len(X)
         min_gini = float("inf")
         for feature in features:
             values = df[feature].unique()
@@ -74,12 +75,18 @@ class DecisionTree:
         return result
 
     def weighted_gini_impurity(self, l, r):
+        '''
+        finds weighted gini impurity of the two child nodes
+        '''
         weight_r = len(r)/(len(l)+len(r))
         weight_l = 1 - weight_r
         return (weight_r*(self.gini_impurity(r)) + weight_l*(self.gini_impurity(l)))
 
 
     def gini_impurity(self, subset):
+        '''
+        calculates gini impurity of a node
+        '''
         target  = subset.iloc[:,-1]
         sub_label_distr = dict(target.value_counts())
         total = len(target)
@@ -90,9 +97,15 @@ class DecisionTree:
         return impurity
     
     def final_label(self, col):
+        '''
+        calculated final value of leaf  node
+        '''
         return (dict(map(reversed, dict(col.value_counts()).items()))[max(dict(col.value_counts()).values())])
 
     def predict_sub(self, input, tree):
+        '''
+        makes prediction for single input
+        '''
         if tree.isLeaf:
             return tree.value
         else:
@@ -104,6 +117,9 @@ class DecisionTree:
                 return self.predict_sub(input, tree.right_node)
     
     def predict(self, inputs):
+        '''
+        makes prediction for series of inputs
+        '''
         preds = []
         for i in range(len(inputs)):
             preds.append(self.predict_sub(inputs.iloc[i], self.root))
@@ -116,6 +132,9 @@ class RandomForest:
         self.prediction_labels = None
 
     def create_forest(self, df):
+        '''
+        creates random forest by training multiple decision trees
+        '''
         datasets = self.get_all_bootstraps(df)
         trees = []
         for dataset in datasets:
