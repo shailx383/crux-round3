@@ -214,7 +214,6 @@ class NaiveBayesClassifier:
     def fit_(self, df):
         y = df.iloc[:,-1]
         X = df.iloc[:,:2]
-        X.drop('Unnamed: 0', axis = 1, inplace=True)
         X = X[X.columns[0]]
         self.target = df.columns[-1]
         self.labels = y.unique()
@@ -276,12 +275,3 @@ class NaiveBayesClassifier:
                 word_count[word][index] += 1
         word_count = pd.DataFrame(word_count)
         return word_count
-
-        
-        
-
-        
-
-
-
-        
