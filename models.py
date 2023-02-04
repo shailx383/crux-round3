@@ -167,7 +167,11 @@ class RandomForest:
 
 
 class NaiveBayesClassifier:
+    def __init__(self):
+        self.label_probabilities = None
     
+    #def fit(self, X, y):
+        
     
         
 
