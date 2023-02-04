@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import random
+from nltk.corpus import stopwords
+import string
 
 class Node:
     def __init__(self, feature=None, impurity=None, thresh=None, left_node=None, right_node=None, value=None, isLeaf=False):
@@ -20,10 +22,16 @@ class DecisionTree:
         self.root = None
     
     def fit(self, X, y):
+        '''
+        
+        '''
         df = pd.concat([X, y], axis = 1)
         self.root = self.make_tree(0, df)
     
     def make_tree(self, depth, df):
+        '''
+        
+        '''
         rows = len(df.iloc[:,:-1])
         features = list(df.iloc[:,:-1].columns)
         if self.max_depth > depth and rows > self.min_rows_split:
@@ -35,8 +43,9 @@ class DecisionTree:
         final_value = self.final_label(df.iloc[:,-1])
         return Node(value=final_value, isLeaf=True)
 
-
     def optimal_feature(self, df):
+        '''
+        '''
         X = df.iloc[:,:-1]
         y = df.iloc[:,-1]
         features = list(X.columns)
@@ -51,8 +60,6 @@ class DecisionTree:
                 r_condition = df[feature] > val
                 l_df = df[l_condition]
                 r_df = df[r_condition]
-                # print('r_df', r_df)
-                # print('l_df', l_df)
                 if len(l_df) > 0 and len(r_df) > 0:
                     gini = self.weighted_gini_impurity(l_df, r_df)
                     if gini < min_gini:
@@ -167,12 +174,91 @@ class RandomForest:
 
 
 class NaiveBayesClassifier:
-    def __init__(self):
-        self.label_probabilities = None
+    def __init__(self, alpha = 1):
+        self.category_dfs = {}
+        self.prior_probs = {}
+        self.label_counts = {}
+        self.alpha = alpha
+        self.label_parameters = {}
     
-    #def fit(self, X, y):
+    def fit(self, X, y):
+        df = pd.concat([X,y], axis = 1)
+        self.fit_(df)
+
+    def length_of_doc(self, val):
+        return len(val.split())
+
+    def clean(self, lyric):
+        nopunc = ''.join([char for char in lyric if char not in string.punctuation])
+        return ' '.join([word for word in nopunc.split() if word.lower() not in stopwords.words('english')])
+
+    def fit_(self, df):
+        y = df.iloc[:,-1]
+        X = df.iloc[:,:2]
+        X.drop('Unnamed: 0', axis = 1, inplace=True)
+        X = X[X.columns[0]]
+        self.target = df.columns[-1]
+        self.labels = y.unique()
+        vocab = []
+        for doc in X:
+            for word in doc.split():
+                if word not in vocab:
+                    vocab.append(word)
+        self.vocabulary = vocab
+        self.n_vocab = len(self.vocabulary)
+        wc_df = self.generate_word_count(X)
+        X.index = X.index.sort_values()
+        y.index = y.index.sort_values()
+        clean_df = pd.concat([X, y, wc_df], axis = 1)
+        clean_df = clean_df.dropna()
+        for label in self.labels:
+            label_df = clean_df[clean_df[self.target] == label]
+            self.category_dfs[label] = label_df
+        for label in self.labels:
+            label_prob = len(self.category_dfs[label])/len(clean_df)
+            self.prior_probs[label] = label_prob
+            words_per_label = self.category_dfs[label][self.target].apply(lambda x: self.length_of_doc(x))
+            self.label_counts[label] = words_per_label.sum()
+        for label in self.labels:
+            parameters_label = {unique_word:0 for unique_word in self.vocabulary}
+            for word in self.vocabulary:
+                n_word_given_label = self.category_dfs[label][word].sum()
+                p_word_given_label = (n_word_given_label + self.alpha) / (self.label_counts[label] + self.alpha*self.n_vocab)
+                parameters_label[word] = p_word_given_label
+            self.label_parameters[label] = parameters_label
+
+    def _predict(self, doc):
+        doc = self.clean(doc)
+        doc = doc.split()
+        label_scores = {}
+        for label in self.labels:
+            p_label_given_lyric = self.prior_probs[label]
+            label_scores[label] = p_label_given_lyric
+        for word in doc:
+            for label in self.labels:
+                if word in self.label_parameters[label]:
+                    label_scores[label] *= (self.label_parameters[label][word]*(1000))
+        return self.max_dict(label_scores)
+
+    def max_dict(self, d):
+        rev = dict(map(reversed, d.items()))
+        return rev[max(list(d.values()))]
+    
+    def predict(self, X):
+        preds = []
+        for i in X:
+            preds.append(self._predict(i))
+        return preds
+
+    def generate_word_count(self, X):
+        word_count = {word: [0] * len(X) for word in self.vocabulary}
+        for index, doc in enumerate(X):
+            for word in doc.split():
+                word_count[word][index] += 1
+        word_count = pd.DataFrame(word_count)
+        return word_count
+
         
-    
         
 
         
