@@ -4,6 +4,11 @@ import random
 from nltk.corpus import stopwords
 import string
 
+
+import numpy as np
+import pandas as pd
+import random
+
 class Node:
     def __init__(self, feature=None, impurity=None, thresh=None, left_node=None, right_node=None, value=None, isLeaf=False):
         self.feature = feature
@@ -22,16 +27,10 @@ class DecisionTree:
         self.root = None
     
     def fit(self, X, y):
-        '''
-        trains the model with given X_train and y_train
-        '''
         df = pd.concat([X, y], axis = 1)
         self.root = self.make_tree(0, df)
     
     def make_tree(self, depth, df):
-        '''
-        recursively builds the decision tree unitl specified maximum depth
-        '''
         rows = len(df.iloc[:,:-1])
         features = list(df.iloc[:,:-1].columns)
         if self.max_depth > depth and rows > self.min_rows_split:
@@ -40,53 +39,47 @@ class DecisionTree:
                 l_tree = self.make_tree(depth+1, best_split['left_split'])
                 r_tree = self.make_tree(depth+1, best_split['right_split'])
                 return Node(best_split['feat'], best_split['gini'], best_split['thresh'], l_tree, r_tree)
+        print('df:\n', df,'\n')
         final_value = self.final_label(df.iloc[:,-1])
         return Node(value=final_value, isLeaf=True)
 
+
     def optimal_feature(self, df):
-        '''
-        finds best split of the dataframe based on feature and threshold. 
-        finds the split with the minimum gini impurity.
-        '''
         X = df.iloc[:,:-1]
         y = df.iloc[:,-1]
         features = list(X.columns)
+        total_rows = len(X)
         min_gini = float("inf")
         for feature in features:
             values = df[feature].unique()
-            values.sort()
-            values = values[1:-1]
             for val in values:
                 l_condition = df[feature] <= val
                 r_condition = df[feature] > val
                 l_df = df[l_condition]
                 r_df = df[r_condition]
-                if len(l_df) > 0 and len(r_df) > 0:
-                    gini = self.weighted_gini_impurity(l_df, r_df)
-                    if gini < min_gini:
-                        min_gini = gini
-                        result = {
-                            'feat': feature,
-                            'thresh': val,
-                            'left_split': l_df,
-                            'right_split': r_df,
-                            'gini': gini
-                        }
+#                 print('r_df', r_df)
+#                 print('l_df', l_df)
+#                 print('val', val)
+#                 print('feature', feature)
+                gini = self.weighted_gini_impurity(l_df, r_df)
+                if gini < min_gini:
+                    min_gini = gini
+                    result = {
+                        'feat': feature,
+                        'thresh': val,
+                        'left_split': l_df,
+                        'right_split': r_df,
+                        'gini': gini
+                    }
         return result
 
     def weighted_gini_impurity(self, l, r):
-        '''
-        finds weighted gini impurity of the two child nodes
-        '''
         weight_r = len(r)/(len(l)+len(r))
         weight_l = 1 - weight_r
         return (weight_r*(self.gini_impurity(r)) + weight_l*(self.gini_impurity(l)))
 
 
     def gini_impurity(self, subset):
-        '''
-        calculates gini impurity of a node
-        '''
         target  = subset.iloc[:,-1]
         sub_label_distr = dict(target.value_counts())
         total = len(target)
@@ -97,15 +90,9 @@ class DecisionTree:
         return impurity
     
     def final_label(self, col):
-        '''
-        calculated final value of leaf  node
-        '''
         return (dict(map(reversed, dict(col.value_counts()).items()))[max(dict(col.value_counts()).values())])
 
     def predict_sub(self, input, tree):
-        '''
-        makes prediction for single input
-        '''
         if tree.isLeaf:
             return tree.value
         else:
@@ -117,9 +104,6 @@ class DecisionTree:
                 return self.predict_sub(input, tree.right_node)
     
     def predict(self, inputs):
-        '''
-        makes prediction for series of inputs
-        '''
         preds = []
         for i in range(len(inputs)):
             preds.append(self.predict_sub(inputs.iloc[i], self.root))
@@ -132,9 +116,6 @@ class RandomForest:
         self.prediction_labels = None
 
     def create_forest(self, df):
-        '''
-        creates random forest by training multiple decision trees
-        '''
         datasets = self.get_all_bootstraps(df)
         trees = []
         for dataset in datasets:
